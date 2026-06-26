@@ -80,16 +80,24 @@ class ParadexDirectInspireHand:
         params["tactile"] = tactile
         self.controller = InspireF1Controller(**params)
 
+    # Inspire F1 direct controller register order is:
+    #   [little, ring, middle, index, thumb_2, thumb_1]
+    # HRDexDB FK dataset order is:
+    #   [thumb_1, thumb_2, index, middle, ring, little]
+    # Keep the policy-facing state/action in HRDexDB order.
+    DIRECT_TO_HRDEX = np.array([5, 4, 3, 2, 1, 0], dtype=np.int64)
+
     @staticmethod
     def qpos_to_raw_angle(qpos: np.ndarray) -> np.ndarray:
         # Inverse of paradex.io.robot_controller.inspire_f1_controller._raw_to_qpos.
-        # Returns RH56F1 raw angle units (0.1 deg), matching HRDexDB hand_joint/hand_cmd scale.
+        # Returns RH56F1 raw angle units (0.1 deg), reordered to match
+        # HRDexDB hand_joint/hand_cmd scale.
         qpos = np.asarray(qpos, dtype=np.float32).reshape(6)
         raw = np.zeros(6, dtype=np.float32)
         raw[:4] = (174.0 - qpos[:4] * 180.0 / np.pi) * 10.0
         raw[4] = (135.0 - qpos[4] * 180.0 / np.pi) * 10.0
         raw[5] = (180.0 - qpos[5] * 180.0 / np.pi) * 10.0
-        return raw
+        return raw[ParadexDirectInspireHand.DIRECT_TO_HRDEX]
 
     def get_qpos(self) -> np.ndarray | None:
         data = self.controller.get_data()

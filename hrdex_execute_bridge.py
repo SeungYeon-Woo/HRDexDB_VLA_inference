@@ -55,6 +55,7 @@ WORKSPACE_XYZ = np.array([
 ], dtype=np.float32)
 
 F1_RAW_LIMITS = np.array([1740.0, 1740.0, 1740.0, 1740.0, 1350.0, 1800.0], dtype=np.float32)
+HRDEX_TO_DIRECT = np.array([5, 4, 3, 2, 1, 0], dtype=np.int64)
 
 
 def rot6d_to_rotmat(rot6d: np.ndarray) -> np.ndarray:
@@ -131,8 +132,14 @@ def guarded_eef_target(current_pose6: np.ndarray, pred_eef9: np.ndarray, *, max_
 
 
 def raw_to_f1_action(raw: np.ndarray) -> np.ndarray:
-    raw = np.asarray(raw, dtype=np.float32).reshape(6)
-    return np.clip(raw / F1_RAW_LIMITS * 1000.0, 0.0, 1000.0).astype(np.float64)
+    # Policy outputs HRDexDB order:
+    #   [thumb_1, thumb_2, index, middle, ring, little]
+    # paradex direct Inspire controller expects normalized command in hardware
+    # register order:
+    #   [little, ring, middle, index, thumb_2, thumb_1]
+    raw_hrdex = np.asarray(raw, dtype=np.float32).reshape(6)
+    raw_direct = raw_hrdex[HRDEX_TO_DIRECT]
+    return np.clip(raw_direct / F1_RAW_LIMITS * 1000.0, 0.0, 1000.0).astype(np.float64)
 
 
 def guarded_hand_target(current_raw: np.ndarray, pred_raw: np.ndarray, *, max_step: float) -> np.ndarray:
