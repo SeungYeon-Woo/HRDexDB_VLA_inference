@@ -30,7 +30,7 @@ def main() -> None:
             raw = hand.get_raw_angle()
             print({
                 "qpos_rad": None if qpos is None else np.round(qpos, 4).tolist(),
-                "raw_angle_est": None if raw is None else np.round(raw, 2).tolist(),
+                "raw_angle_hrdex_est": None if raw is None else np.round(raw, 2).tolist(),
             }, flush=True)
             count += 1
             if args.samples <= 0 or count < args.samples:
