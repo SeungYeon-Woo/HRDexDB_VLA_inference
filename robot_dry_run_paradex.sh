@@ -9,4 +9,4 @@ cd "$(dirname "$0")"
 : "${PARADEX_LEFT_CAMERA:=}"
 : "${PARADEX_RIGHT_CAMERA:=}"
 
-uv run python xarm_inspire_rldx_bridge.py   --ros   --camera-source paradex   --dry-run   --server-host "$RLDX_SERVER_HOST"   --server-port "$RLDX_SERVER_PORT"   --instruction "$INSTRUCTION"   --paradex-root ../paradex   --paradex-left-camera-name "$PARADEX_LEFT_CAMERA"   --paradex-right-camera-name "$PARADEX_RIGHT_CAMERA"   --arm-state-topic /right/xarm/joint_states   --hand-state-topic /right/joint_states   --hand-command-topic /right/position_controller/commands
+"${PYTHON:-python}" xarm_inspire_rldx_bridge.py   --ros   --camera-source paradex   --dry-run   --server-host "$RLDX_SERVER_HOST"   --server-port "$RLDX_SERVER_PORT"   --instruction "$INSTRUCTION"   --paradex-root ../paradex   --paradex-left-camera-name "$PARADEX_LEFT_CAMERA"   --paradex-right-camera-name "$PARADEX_RIGHT_CAMERA"   --arm-state-topic /right/xarm/joint_states   --hand-state-topic /right/joint_states   --hand-command-topic /right/position_controller/commands

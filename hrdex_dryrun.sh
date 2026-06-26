@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 : "${PARADEX_CAMERA:=}"
 : "${LOG_JSONL:=hrdex_dryrun_log.jsonl}"
 
-uv run python hrdex_rldx_dryrun_bridge.py \
+"${PYTHON:-python}" hrdex_rldx_dryrun_bridge.py \
   --server-host "$RLDX_SERVER_HOST" \
   --server-port "$RLDX_SERVER_PORT" \
   --instruction "$INSTRUCTION" \

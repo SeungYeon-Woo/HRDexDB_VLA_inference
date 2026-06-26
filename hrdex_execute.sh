@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 : "${INSTRUCTION:=grasp the apple and release it}"
 : "${PARADEX_CAMERA:=}"
 
-uv run python hrdex_execute_bridge.py \
+"${PYTHON:-python}" hrdex_execute_bridge.py \
   --server-host "$RLDX_SERVER_HOST" \
   --server-port "$RLDX_SERVER_PORT" \
   --instruction "$INSTRUCTION" \

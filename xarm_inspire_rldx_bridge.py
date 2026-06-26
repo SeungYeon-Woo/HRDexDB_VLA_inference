@@ -160,6 +160,7 @@ class ParadexCameraStream:
         pc_list: list[str] | None,
         start_remote_stream: bool,
         stream_fps: int,
+        stream_script: str = "src/capture/camera/stream_client.py",
     ):
         root = Path(paradex_root).expanduser().resolve()
         if str(root) not in sys.path:
@@ -180,7 +181,7 @@ class ParadexCameraStream:
             from paradex.io.camera_system.remote_camera_controller import remote_camera_controller
             from paradex.io.capture_pc.ssh import run_script
 
-            run_script("python src/capture/camera/stream_client.py", pc_list=pc_list)
+            run_script(f"python {stream_script}", pc_list=pc_list)
             self.remote_controller = remote_camera_controller("rldx_bridge", pc_list=pc_list)
             self.remote_controller.start("stream", False, fps=stream_fps)
 
