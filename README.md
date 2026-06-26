@@ -7,7 +7,7 @@ robot     : xArm6 + Inspire F1
 arm       : ROS2 xarm_api
 hand      : paradex direct Inspire controller
 camera    : paradex FLIR stream, main camera 22645029
-policy    : RLDX-1 server on the robot PC GPU
+policy    : RLDX-1 server on robot PC GPU or another inference PC
 checkpoint: checkpoint-11000
 ```
 
@@ -33,13 +33,7 @@ This gives you:
 ~/VCL/VLA_vanilla_test/paradex
 ```
 
-Set up the official RLDX-1 environment inside:
-
-```text
-~/VCL/VLA_vanilla_test/vla_inference/third_party/RLDX-1
-```
-
-Follow the official RLDX-1 repo instructions for its Python/CUDA environment.
+If RLDX inference runs on another local inference PC, the robot PC does not need the RLDX Python/CUDA environment or checkpoint. It only needs this bridge, ROS2, paradex access, and network access to the inference server.
 
 ## 2. Camera PC Setup
 
@@ -96,7 +90,29 @@ sudo pkill -f src/camera
 
 Do not run `sudo pkill -f python` on capture PCs.
 
-## 3. Download Checkpoint On Robot PC
+## 3. Inference PC Setup
+
+Do this on the separate local inference PC, not on the robot PC, if that PC will run RLDX.
+
+Clone the same repo there:
+
+```bash
+mkdir -p ~/VCL/VLA_vanilla_test
+cd ~/VCL/VLA_vanilla_test
+git clone --recurse-submodules https://github.com/SeungYeon-Woo/HRDexDB_VLA_inference.git vla_inference
+cd vla_inference
+./setup_robot_pc.sh
+```
+
+Set up the official RLDX-1 environment inside:
+
+```text
+~/VCL/VLA_vanilla_test/vla_inference/third_party/RLDX-1
+```
+
+Follow the official RLDX-1 repo instructions for its Python/CUDA environment.
+
+Download the checkpoint on the inference PC. The robot PC does not need the checkpoint when using remote inference.
 
 The checkpoint is hosted on Hugging Face:
 
@@ -144,7 +160,9 @@ ros2 topic echo /right/xarm/joint_states --once
 ros2 topic echo /right/xarm/robot_states --once
 ```
 
-## 5. Start RLDX Server On Robot PC
+## 5. Start RLDX Server
+
+Run this on the inference PC that has the GPU and checkpoint. In the remote setup, this is the separate local inference PC, not the robot PC.
 
 Use the RLDX environment terminal:
 
@@ -167,6 +185,45 @@ Default server address:
 127.0.0.1:22610
 ```
 
+### Connect Robot PC To The Inference PC
+
+Recommended: use SSH tunneling from the robot PC to the inference PC.
+
+On the inference PC, start RLDX with the default localhost bind:
+
+```bash
+cd ~/VCL/VLA_vanilla_test/vla_inference
+CUDA_VISIBLE_DEVICES=0 ./serve_hrdex_checkpoint_local.sh
+```
+
+On the robot PC, open a tunnel in a separate terminal:
+
+```bash
+cd ~/VCL/VLA_vanilla_test/vla_inference
+./ssh_tunnel_to_gpu.sh <USER@INFERENCE_PC_HOST>
+```
+
+Example:
+
+```bash
+./ssh_tunnel_to_gpu.sh seungyeon@192.168.0.104
+```
+
+Then the robot PC bridge still uses:
+
+```text
+RLDX_SERVER_HOST=127.0.0.1
+RLDX_SERVER_PORT=22610
+```
+
+Check the tunnel from the robot PC:
+
+```bash
+nc -vz 127.0.0.1 22610
+```
+
+Alternative: bind the inference server to the LAN with `RLDX_BIND_HOST=0.0.0.0` and set `RLDX_SERVER_HOST=<INFERENCE_PC_IP>` on the robot PC. Use this only if firewall/network policy allows it.
+
 ## 6. Check Robot Inputs
 
 Use a ROS2/paradex-capable terminal on the robot PC:
@@ -185,6 +242,8 @@ No robot command is sent in this mode.
 ```bash
 cd ~/VCL/VLA_vanilla_test/vla_inference
 PYTHON=python \
+RLDX_SERVER_HOST=127.0.0.1 \
+RLDX_SERVER_PORT=22610 \
 PARADEX_CAMERA=22645029 \
 INSTRUCTION="grasp the apple and release it" \
 ./hrdex_dryrun.sh
@@ -208,6 +267,8 @@ Only after dry-run looks sane:
 ```bash
 cd ~/VCL/VLA_vanilla_test/vla_inference
 PYTHON=python \
+RLDX_SERVER_HOST=127.0.0.1 \
+RLDX_SERVER_PORT=22610 \
 PARADEX_CAMERA=22645029 \
 ./hrdex_execute.sh --no-dry-run --execute-arm --execution-horizon 1
 ```
