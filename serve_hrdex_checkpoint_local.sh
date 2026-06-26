@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${RLDX_ROOT:=/research/RLDX-1}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+: "${RLDX_ROOT:=$SCRIPT_DIR/third_party/RLDX-1}"
 : "${RLDX_PYTHON:=$RLDX_ROOT/.venv/bin/python}"
 : "${CUDA_VISIBLE_DEVICES:=0}"
 : "${RLDX_MODEL_PATH:=/research/ckpt/fk_lora_r16_b16_20k/fk_lora_r16_b16_20k/checkpoint-11000}"

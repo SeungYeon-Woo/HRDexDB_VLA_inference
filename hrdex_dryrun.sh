@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 : "${RLDX_SERVER_HOST:=127.0.0.1}"
 : "${RLDX_SERVER_PORT:=22610}"
 : "${INSTRUCTION:=grasp the apple and release it}"
-: "${PARADEX_CAMERA:=}"
+: "${PARADEX_CAMERA:=22645029}"
 : "${LOG_JSONL:=hrdex_dryrun_log.jsonl}"
 
 "${PYTHON:-python}" hrdex_rldx_dryrun_bridge.py \

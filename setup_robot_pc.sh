@@ -2,7 +2,6 @@
 set -euo pipefail
 
 WORKSPACE_ROOT="${WORKSPACE_ROOT:-$HOME/VCL/VLA_vanilla_test}"
-RLDX_REPO_URL="${RLDX_REPO_URL:-https://github.com/RLWRLD/RLDX-1.git}"
 VLA_REPO_URL="${VLA_REPO_URL:-https://github.com/SeungYeon-Woo/HRDexDB_VLA_inference.git}"
 PARADEX_REPO_URL="${PARADEX_REPO_URL:-https://github.com/willi19/paradex.git}"
 PARADEX_BRANCH="${PARADEX_BRANCH:-xarm-f1}"
@@ -27,9 +26,12 @@ clone_or_update() {
   fi
 }
 
-clone_or_update "$RLDX_REPO_URL" RLDX-1
 clone_or_update "$VLA_REPO_URL" vla_inference
 clone_or_update "$PARADEX_REPO_URL" paradex "$PARADEX_BRANCH"
+
+cd "$WORKSPACE_ROOT/vla_inference"
+git submodule update --init --recursive
+cd "$WORKSPACE_ROOT"
 
 
 # Install the HRDexDB 480x640 camera stream script into paradex.
@@ -54,7 +56,7 @@ Next terminals:
 
 1. RLDX server terminal:
    cd $WORKSPACE_ROOT/vla_inference
-   RLDX_ROOT=$WORKSPACE_ROOT/RLDX-1 \\
+   RLDX_ROOT=$WORKSPACE_ROOT/vla_inference/third_party/RLDX-1 \\
    RLDX_MODEL_PATH=/research/ckpt/fk_lora_r16_b16_20k/fk_lora_r16_b16_20k/checkpoint-11000 \\
    CUDA_VISIBLE_DEVICES=0 \\
    ./serve_hrdex_checkpoint_local.sh
@@ -68,6 +70,6 @@ Next terminals:
 3. Bridge terminal:
    cd $WORKSPACE_ROOT/vla_inference
    PYTHON=python ./check_robot_inputs.sh
-   PYTHON=python PARADEX_CAMERA=<MAIN_CAMERA_NAME_OR_SERIAL> ./hrdex_dryrun.sh
+   PYTHON=python PARADEX_CAMERA=22645029 ./hrdex_dryrun.sh
 
 EOF
