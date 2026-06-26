@@ -96,7 +96,35 @@ sudo pkill -f src/camera
 
 Do not run `sudo pkill -f python` on capture PCs.
 
-## 3. Start xArm ROS2 On Robot PC
+## 3. Download Checkpoint On Robot PC
+
+The checkpoint is hosted on Hugging Face:
+
+```text
+yeon0857/HRDexDB_RLDX_checkpoint
+```
+
+Install the HF CLI and login once. If the repo is private, the token must have read permission.
+
+```bash
+python -m pip install -U huggingface_hub hf_transfer
+huggingface-cli login
+```
+
+Download the checkpoint:
+
+```bash
+cd ~/VCL/VLA_vanilla_test/vla_inference
+./download_checkpoint.sh
+```
+
+Default checkpoint path after download:
+
+```text
+~/VCL/checkpoints/HRDexDB_RLDX/checkpoint-11000
+```
+
+## 4. Start xArm ROS2 On Robot PC
 
 ```bash
 cd /home/temp_id/xarm_ws
@@ -116,13 +144,19 @@ ros2 topic echo /right/xarm/joint_states --once
 ros2 topic echo /right/xarm/robot_states --once
 ```
 
-## 4. Start RLDX Server On Robot PC
+## 5. Start RLDX Server On Robot PC
 
 Use the RLDX environment terminal:
 
 ```bash
 cd ~/VCL/VLA_vanilla_test/vla_inference
-RLDX_MODEL_PATH=/research/ckpt/fk_lora_r16_b16_20k/fk_lora_r16_b16_20k/checkpoint-11000 \
+CUDA_VISIBLE_DEVICES=0 ./serve_hrdex_checkpoint_local.sh
+```
+
+If you downloaded the checkpoint somewhere else, override `RLDX_MODEL_PATH`:
+
+```bash
+RLDX_MODEL_PATH=/path/to/checkpoint-11000 \
 CUDA_VISIBLE_DEVICES=0 \
 ./serve_hrdex_checkpoint_local.sh
 ```
@@ -133,7 +167,7 @@ Default server address:
 127.0.0.1:22610
 ```
 
-## 5. Check Robot Inputs
+## 6. Check Robot Inputs
 
 Use a ROS2/paradex-capable terminal on the robot PC:
 
@@ -144,7 +178,7 @@ PYTHON=python ./check_robot_inputs.sh
 
 This checks xArm joint state, xArm EEF state, and Inspire F1 direct state.
 
-## 6. Real Inference Dry-Run
+## 7. Real Inference Dry-Run
 
 No robot command is sent in this mode.
 
@@ -167,7 +201,7 @@ hand_joint / hand_cmd are finite and roughly in expected raw range
 pred.eef_target is finite and not jumping wildly
 ```
 
-## 7. Guarded Arm-Only Test
+## 8. Guarded Arm-Only Test
 
 Only after dry-run looks sane:
 

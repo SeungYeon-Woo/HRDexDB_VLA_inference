@@ -61,13 +61,13 @@ Next terminals:
    CUDA_VISIBLE_DEVICES=0 \\
    ./serve_hrdex_checkpoint_local.sh
 
-2. ROS2 xArm terminal:
+3. ROS2 xArm terminal:
    cd /home/temp_id/xarm_ws
    sis
    ROS_NAMESPACE=right ros2 launch xarm_api xarm6_driver.launch.py \\
      robot_ip:=192.168.2.216 report_type:=dev joint_states_rate:=150 ros_namespace:=right
 
-3. Bridge terminal:
+4. Bridge terminal:
    cd $WORKSPACE_ROOT/vla_inference
    PYTHON=python ./check_robot_inputs.sh
    PYTHON=python PARADEX_CAMERA=22645029 ./hrdex_dryrun.sh
