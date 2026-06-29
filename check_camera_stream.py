@@ -42,9 +42,14 @@ def main() -> None:
             for key in image_keys:
                 item = data[key]
                 payload = item.get("data")
+                timestamp_unix = item.get("timestamp_unix")
+                lag_ms = None
+                if timestamp_unix is not None:
+                    lag_ms = (time.time() - float(timestamp_unix)) * 1000.0
                 summary[str(key)] = {
                     "frame_id": item.get("frame_id"),
                     "timestamp": item.get("timestamp"),
+                    "lag_ms": lag_ms,
                     "shape": item.get("shape"),
                     "encoding": item.get("encoding"),
                     "bytes": None if payload is None else len(payload),

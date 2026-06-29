@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import time
+from datetime import datetime, timezone
 from threading import Event
 
 import cv2
@@ -65,6 +66,7 @@ try:
             if not success:
                 continue
 
+            published_at_unix = time.time()
             meta_data.append({
                 "type": "image",
                 "name": camera_name,
@@ -72,6 +74,8 @@ try:
                 "shape": tuple(int(x) for x in resized.shape),
                 "encoding": "jpeg_bgr_cv2",
                 "target_shape": [args.height, args.width, 3],
+                "timestamp": datetime.fromtimestamp(published_at_unix, tz=timezone.utc).isoformat(),
+                "timestamp_unix": published_at_unix,
                 "data_index": len(binary_data),
             })
             binary_data.append(encoded_image)

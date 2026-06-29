@@ -196,7 +196,7 @@ class ParadexCameraStream:
             return None
         return [x.strip() for x in value.split(",") if x.strip()]
 
-    def _decode_item(self, item: dict[str, Any]) -> tuple[np.ndarray, int, str]:
+    def _decode_item(self, item: dict[str, Any]) -> tuple[np.ndarray, int, str, float | None]:
         image_bytes = item.get("data")
         if image_bytes is None:
             raise RuntimeError(f"Camera item has no JPEG data: {item.keys()}")
@@ -205,7 +205,13 @@ class ParadexCameraStream:
         if bgr is None:
             raise RuntimeError("Failed to decode paradex JPEG camera frame")
         rgb = bgr[..., ::-1].copy()
-        return rgb, int(item.get("frame_id", 0)), str(item.get("timestamp", ""))
+        timestamp_unix = item.get("timestamp_unix")
+        return (
+            rgb,
+            int(item.get("frame_id", 0)),
+            str(item.get("timestamp", "")),
+            None if timestamp_unix is None else float(timestamp_unix),
+        )
 
     @staticmethod
     def _lookup_key(data: dict[Any, Any], requested_key: str) -> Any:
@@ -242,8 +248,8 @@ class ParadexCameraStream:
         if right_item is None:
             right_item = left_item
 
-        left_rgb, left_fid, left_ts = self._decode_item(left_item)
-        right_rgb, right_fid, right_ts = self._decode_item(right_item)
+        left_rgb, left_fid, left_ts, left_ts_unix = self._decode_item(left_item)
+        right_rgb, right_fid, right_ts, right_ts_unix = self._decode_item(right_item)
         info = {
             "left_key": left_key,
             "right_key": right_key,
@@ -251,6 +257,8 @@ class ParadexCameraStream:
             "right_frame_id": right_fid,
             "left_timestamp": left_ts,
             "right_timestamp": right_ts,
+            "left_timestamp_unix": left_ts_unix,
+            "right_timestamp_unix": right_ts_unix,
             "available": list(all_data.keys()),
             "image_keys": image_keys,
         }

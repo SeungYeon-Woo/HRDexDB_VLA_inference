@@ -110,9 +110,30 @@ def camera_summary(cam_info: dict[str, Any]) -> dict[str, Any]:
     out = dict(cam_info)
     ts = out.get("left_timestamp")
     lag_ms = parse_iso_lag_ms(ts)
+    ts_unix = out.get("left_timestamp_unix")
+    if ts_unix is not None:
+        try:
+            lag_ms = (time.time() - float(ts_unix)) * 1000.0
+        except Exception:
+            pass
     if lag_ms is not None:
         out["lag_ms"] = lag_ms
     return out
+
+
+def make_dummy_frame(step: int, height: int = 480, width: int = 640) -> np.ndarray:
+    """Generate a deterministic RGB test image for pipeline bring-up."""
+    y = np.linspace(0, 255, height, dtype=np.uint16)[:, None]
+    x = np.linspace(0, 255, width, dtype=np.uint16)[None, :]
+    frame = np.empty((height, width, 3), dtype=np.uint8)
+    frame[..., 0] = ((x + step * 7) % 256).astype(np.uint8)
+    frame[..., 1] = ((y + step * 11) % 256).astype(np.uint8)
+    frame[..., 2] = (((x // 2 + y // 2) + step * 13) % 256).astype(np.uint8)
+    # Add a moving square so consecutive frames are visibly different.
+    col = (step * 17) % max(1, width - 80)
+    row = (step * 9) % max(1, height - 80)
+    frame[row:row + 80, col:col + 80] = np.array([255, 40, 40], dtype=np.uint8)
+    return frame
 
 
 class Latest:
@@ -190,6 +211,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--control-hz", type=float, default=2.0)
     p.add_argument("--video-t", type=int, default=0, help="0 means infer from server modality config")
     p.add_argument("--request-timeout-ms", type=int, default=5000)
+    p.add_argument("--camera-backend", choices=("paradex", "dummy"), default="paradex")
     p.add_argument("--paradex-root", default="../paradex")
     p.add_argument("--paradex-pc-list", default="")
     p.add_argument("--paradex-camera-name", default="", help="Camera name/serial to map to video.main. Empty uses first image.")
@@ -237,7 +259,7 @@ def main() -> None:
     frames: deque[np.ndarray] = deque(maxlen=max(1, frame_queue_len))
     arm_joint_names = [x.strip() for x in args.arm_joint_names.split(",") if x.strip()]
 
-    if args.paradex_start_remote_stream:
+    if args.paradex_start_remote_stream and args.camera_backend == "paradex":
         root = Path(args.paradex_root).expanduser().resolve()
         if str(root) not in sys.path:
             sys.path.insert(0, str(root))
@@ -249,14 +271,16 @@ def main() -> None:
         rcc = remote_camera_controller("hrdex_rldx_dryrun", pc_list=pc_list)
         rcc.start("stream", False, fps=args.paradex_stream_fps)
 
-    camera_stream = ParadexCameraStream(
-        paradex_root=args.paradex_root,
-        left_camera_name=args.paradex_camera_name,
-        right_camera_name=args.paradex_camera_name,
-        pc_list=ParadexCameraStream._parse_pc_list(args.paradex_pc_list),
-        start_remote_stream=False,
-        stream_fps=args.paradex_stream_fps,
-    )
+    camera_stream = None
+    if args.camera_backend == "paradex":
+        camera_stream = ParadexCameraStream(
+            paradex_root=args.paradex_root,
+            left_camera_name=args.paradex_camera_name,
+            right_camera_name=args.paradex_camera_name,
+            pc_list=ParadexCameraStream._parse_pc_list(args.paradex_pc_list),
+            start_remote_stream=False,
+            stream_fps=args.paradex_stream_fps,
+        )
 
     hand = None
     if args.hand_backend == "paradex_direct":
@@ -288,11 +312,26 @@ def main() -> None:
     print(f"server={args.server_host}:{args.server_port}, video_t={video_t}, frame_queue_len={frame_queue_len}")
 
     try:
+        dummy_step = 0
         while rclpy.ok():
             t0 = time.monotonic()
             rclpy.spin_once(node, timeout_sec=0.0)
 
-            left_rgb, _right_rgb, cam_info = camera_stream.get_latest()
+            if args.camera_backend == "dummy":
+                left_rgb = make_dummy_frame(dummy_step)
+                dummy_step += 1
+                cam_info = {
+                    "backend": "dummy",
+                    "left_key": "dummy",
+                    "right_key": "dummy",
+                    "left_frame_id": dummy_step,
+                    "right_frame_id": dummy_step,
+                    "available": ["dummy"],
+                    "image_keys": ["dummy"],
+                }
+            else:
+                assert camera_stream is not None
+                left_rgb, _right_rgb, cam_info = camera_stream.get_latest()
             if left_rgb is not None:
                 latest.image_rgb = left_rgb
                 frames.append(left_rgb)
@@ -351,7 +390,8 @@ def main() -> None:
             log_f.close()
         if hand is not None:
             hand.close()
-        camera_stream.close()
+        if camera_stream is not None:
+            camera_stream.close()
         node.destroy_node()
         rclpy.shutdown()
 
