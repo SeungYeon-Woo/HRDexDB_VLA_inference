@@ -30,6 +30,10 @@ camera_names = [x.strip() for x in args.camera_names.split(",") if x.strip()] or
 reader = MultiCameraReader(camera_names=camera_names)
 last_frame_ids = {name: 0 for name in reader.camera_names}
 last_publish_time = 0.0
+last_heartbeat_time = 0.0
+published_batches = 0
+published_frames = 0
+no_new_frame_loops = 0
 print({
     "stream": "hrdex",
     "cameras": list(reader.camera_names),
@@ -76,6 +80,22 @@ try:
         if meta_data:
             dp.send_data(meta_data, binary_data)
             last_publish_time = time.time()
+            published_batches += 1
+            published_frames += len(meta_data)
+            no_new_frame_loops = 0
+        else:
+            no_new_frame_loops += 1
+
+        now = time.time()
+        if now - last_heartbeat_time >= 2.0:
+            print({
+                "stream": "hrdex",
+                "published_batches": published_batches,
+                "published_frames": published_frames,
+                "last_frame_ids": dict(last_frame_ids),
+                "no_new_frame_loops": no_new_frame_loops,
+            }, flush=True)
+            last_heartbeat_time = now
 
         time.sleep(0.01)
 finally:
