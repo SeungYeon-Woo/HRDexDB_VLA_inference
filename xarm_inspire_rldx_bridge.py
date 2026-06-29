@@ -207,26 +207,38 @@ class ParadexCameraStream:
         rgb = bgr[..., ::-1].copy()
         return rgb, int(item.get("frame_id", 0)), str(item.get("timestamp", ""))
 
+    @staticmethod
+    def _lookup_key(data: dict[Any, Any], requested_key: str) -> Any:
+        if requested_key in data:
+            return requested_key
+        for key in data.keys():
+            if str(key) == str(requested_key):
+                return key
+        return requested_key
+
     def get_latest(self) -> tuple[np.ndarray | None, np.ndarray | None, dict[str, Any]]:
         all_data = self.data_collector.get_data()
         if not all_data:
-            return None, None, {"available": []}
+            return None, None, {"available": [], "image_keys": []}
 
         left_key = self.left_camera_name
         right_key = self.right_camera_name
+        image_keys = [k for k, v in all_data.items() if v.get("type") == "image"]
         if not left_key or not right_key:
-            image_keys = [k for k, v in all_data.items() if v.get("type") == "image"]
             if not left_key and image_keys:
                 left_key = image_keys[0]
             if not right_key and len(image_keys) > 1:
                 right_key = image_keys[1]
             elif not right_key:
                 right_key = left_key
+        else:
+            left_key = self._lookup_key(all_data, left_key)
+            right_key = self._lookup_key(all_data, right_key)
 
         left_item = all_data.get(left_key)
         right_item = all_data.get(right_key)
         if left_item is None:
-            return None, None, {"available": list(all_data.keys()), "missing": left_key}
+            return None, None, {"available": list(all_data.keys()), "image_keys": image_keys, "missing": left_key}
         if right_item is None:
             right_item = left_item
 
@@ -240,6 +252,7 @@ class ParadexCameraStream:
             "left_timestamp": left_ts,
             "right_timestamp": right_ts,
             "available": list(all_data.keys()),
+            "image_keys": image_keys,
         }
         return left_rgb, right_rgb, info
 

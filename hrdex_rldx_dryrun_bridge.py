@@ -333,11 +333,15 @@ def main() -> None:
                     }) + "\n")
                     log_f.flush()
             else:
+                waiting_cam = camera_summary(cam_info)
                 print(
                     "waiting obs: "
                     f"image={latest.image_rgb is not None} frames={len(frames)}/{frame_queue_len} "
                     f"arm={latest.arm_joint is not None} hand={latest.hand_joint is not None} "
-                    f"eef={latest.eef_pose is not None}"
+                    f"eef={latest.eef_pose is not None} "
+                    f"camera_missing={waiting_cam.get('missing')} "
+                    f"image_keys={waiting_cam.get('image_keys', [])} "
+                    f"available={waiting_cam.get('available', [])}"
                 )
 
             dt = time.monotonic() - t0
