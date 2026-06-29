@@ -35,6 +35,56 @@ This gives you:
 
 If RLDX inference runs on another local inference PC, the robot PC does not need the RLDX Python/CUDA environment or checkpoint. It only needs this bridge, ROS2, paradex access, and network access to the inference server.
 
+### Minimal Robot PC Checkout
+
+If the robot PC only runs the bridge and connects to a separate inference PC,
+do not clone the RLDX submodule or checkpoint. Use a sparse checkout:
+
+```bash
+mkdir -p ~/VCL/VLA_vanilla_test
+cd ~/VCL/VLA_vanilla_test
+
+git clone --filter=blob:none --no-checkout \
+  git@github.com:SeungYeon-Woo/HRDexDB_VLA_inference.git \
+  vla_inference
+
+cd vla_inference
+git sparse-checkout init --cone
+git sparse-checkout set \
+  camera \
+  hrdex_dryrun.sh \
+  hrdex_rldx_dryrun_bridge.py \
+  xarm_inspire_rldx_bridge.py \
+  standalone_rldx_client.py \
+  check_robot_inputs.sh \
+  check_inspire_state.py \
+  ssh_tunnel_to_gpu.sh \
+  install_camera_stream_script.sh \
+  hrdex_execute.sh \
+  hrdex_execute_bridge.py \
+  README.md
+git checkout main
+```
+
+The robot PC still needs its robot-side runtime dependencies:
+
+```text
+ROS2 / xarm_msgs
+paradex
+numpy
+pyzmq
+msgpack
+opencv-python or system cv2
+```
+
+It does not need:
+
+```text
+third_party/RLDX-1
+checkpoint-11000
+CUDA/PyTorch for RLDX inference
+```
+
 ## 2. Camera PC Setup
 
 On the camera PC, install the HRDex stream script into paradex once:

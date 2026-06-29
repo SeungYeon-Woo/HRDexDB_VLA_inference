@@ -23,14 +23,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import zmq
 
-# Allow this script to run from the standalone vla_inference folder.
-DEFAULT_RLDX_ROOT = Path(__file__).resolve().parents[1] / "RLDX-1"
-if str(DEFAULT_RLDX_ROOT) not in sys.path:
-    sys.path.insert(0, str(DEFAULT_RLDX_ROOT))
-
-from rldx.policy.server_client import PolicyClient
+from standalone_rldx_client import StandalonePolicyClient
 
 
 DUMMY_IMAGE = np.zeros((256, 256, 3), dtype=np.uint8)
@@ -120,11 +114,7 @@ class ParadexDirectInspireHand:
 
 class RLDXRemotePolicy:
     def __init__(self, host: str, port: int, timeout_ms: int):
-        self.client = PolicyClient(host=host, port=port, timeout_ms=timeout_ms, strict=False)
-        # PolicyClient accepts timeout_ms but does not currently apply it to the
-        # ZMQ socket. Set it here so robot-side code can fail closed.
-        self.client.socket.setsockopt(zmq.RCVTIMEO, timeout_ms)
-        self.client.socket.setsockopt(zmq.SNDTIMEO, timeout_ms)
+        self.client = StandalonePolicyClient(host=host, port=port, timeout_ms=timeout_ms)
 
     def ping(self) -> bool:
         return self.client.ping()
@@ -141,10 +131,8 @@ class RLDXRemotePolicy:
     ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         return self.client.get_action(
             observation,
-            options={
-                "session_ids": [session_id],
-                "reset_memory": [reset_memory],
-            },
+            session_id=session_id,
+            reset_memory=reset_memory,
         )
 
 class ParadexCameraStream:
