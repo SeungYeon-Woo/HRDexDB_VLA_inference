@@ -10,10 +10,19 @@ import numpy as np
 from xarm_inspire_rldx_bridge import ParadexDirectInspireHand
 
 
+def add_bool_arg(parser: argparse.ArgumentParser, name: str, *, default: bool, help: str | None = None) -> None:
+    """Python 3.8-compatible replacement for argparse.BooleanOptionalAction."""
+    dest = name.lstrip("-").replace("-", "_")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(name, dest=dest, action="store_true", help=help)
+    group.add_argument(f"--no-{name.lstrip('-')}", dest=dest, action="store_false")
+    parser.set_defaults(**{dest: default})
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--paradex-root", default="../paradex")
-    parser.add_argument("--tactile", action=argparse.BooleanOptionalAction, default=False)
+    add_bool_arg(parser, "--tactile", default=False)
     parser.add_argument("--hz", type=float, default=2.0)
     parser.add_argument("--samples", type=int, default=0, help="Number of samples to print; 0 means run forever.")
     args = parser.parse_args()

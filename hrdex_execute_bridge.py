@@ -39,6 +39,15 @@ from xarm_inspire_rldx_bridge import (  # noqa: E402
 )
 
 
+def add_bool_arg(parser: argparse.ArgumentParser, name: str, *, default: bool, help: str | None = None) -> None:
+    """Python 3.8-compatible replacement for argparse.BooleanOptionalAction."""
+    dest = name.lstrip("-").replace("-", "_")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(name, dest=dest, action="store_true", help=help)
+    group.add_argument(f"--no-{name.lstrip('-')}", dest=dest, action="store_false")
+    parser.set_defaults(**{dest: default})
+
+
 HAND_RAW_LIMITS = np.array([
     [600.0, 1223.0],
     [1161.0, 1350.0],
@@ -165,12 +174,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--arm-state-topic", default="/right/xarm/joint_states")
     p.add_argument("--xarm-robot-states-topic", default="/right/xarm/robot_states")
     p.add_argument("--arm-joint-names", default="joint1,joint2,joint3,joint4,joint5,joint6")
-    p.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True)
-    p.add_argument("--execute-arm", action=argparse.BooleanOptionalAction, default=False)
-    p.add_argument("--execute-hand", action=argparse.BooleanOptionalAction, default=False)
-    p.add_argument(
+    add_bool_arg(p, "--dry-run", default=True)
+    add_bool_arg(p, "--execute-arm", default=False)
+    add_bool_arg(p, "--execute-hand", default=False)
+    add_bool_arg(
+        p,
         "--allow-unverified-hand",
-        action=argparse.BooleanOptionalAction,
         default=False,
         help="Required together with --execute-hand until Inspire hand_cmd mapping is verified.",
     )

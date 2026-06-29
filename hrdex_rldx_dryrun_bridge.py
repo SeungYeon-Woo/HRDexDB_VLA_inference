@@ -41,6 +41,15 @@ from xarm_inspire_rldx_bridge import (  # noqa: E402
 )
 
 
+def add_bool_arg(parser: argparse.ArgumentParser, name: str, *, default: bool, help: str | None = None) -> None:
+    """Python 3.8-compatible replacement for argparse.BooleanOptionalAction."""
+    dest = name.lstrip("-").replace("-", "_")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(name, dest=dest, action="store_true", help=help)
+    group.add_argument(f"--no-{name.lstrip('-')}", dest=dest, action="store_false")
+    parser.set_defaults(**{dest: default})
+
+
 def euler_xyz_to_rotmat(rpy: np.ndarray) -> np.ndarray:
     r, p, y = [float(v) for v in rpy]
     cr, sr = math.cos(r), math.sin(r)
@@ -184,14 +193,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--paradex-root", default="../paradex")
     p.add_argument("--paradex-pc-list", default="")
     p.add_argument("--paradex-camera-name", default="", help="Camera name/serial to map to video.main. Empty uses first image.")
-    p.add_argument("--paradex-start-remote-stream", action=argparse.BooleanOptionalAction, default=False)
+    add_bool_arg(p, "--paradex-start-remote-stream", default=False)
     p.add_argument("--paradex-stream-script", default="python src/capture/camera/stream_client_hrdex.py")
     p.add_argument("--paradex-stream-fps", type=int, default=10)
     p.add_argument("--arm-state-topic", default="/right/xarm/joint_states")
     p.add_argument("--xarm-robot-states-topic", default="/right/xarm/robot_states")
     p.add_argument("--arm-joint-names", default="joint1,joint2,joint3,joint4,joint5,joint6")
     p.add_argument("--hand-backend", choices=("paradex_direct", "none"), default="paradex_direct")
-    p.add_argument("--inspire-direct-tactile", action=argparse.BooleanOptionalAction, default=False)
+    add_bool_arg(p, "--inspire-direct-tactile", default=False)
     p.add_argument("--log-jsonl", default="")
     return p.parse_args()
 

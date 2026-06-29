@@ -10,5 +10,6 @@ fi
 : "${LOCAL_PORT:=22610}"
 : "${REMOTE_HOST:=127.0.0.1}"
 : "${REMOTE_PORT:=22610}"
+: "${SSH_PORT:=22}"
 
-ssh -N -L "${LOCAL_PORT}:${REMOTE_HOST}:${REMOTE_PORT}" "$1"
+ssh -p "${SSH_PORT}" -N -L "${LOCAL_PORT}:${REMOTE_HOST}:${REMOTE_PORT}" "$1"

@@ -30,6 +30,15 @@ from standalone_rldx_client import StandalonePolicyClient
 DUMMY_IMAGE = np.zeros((256, 256, 3), dtype=np.uint8)
 
 
+def add_bool_arg(parser: argparse.ArgumentParser, name: str, *, default: bool, help: str | None = None) -> None:
+    """Python 3.8-compatible replacement for argparse.BooleanOptionalAction."""
+    dest = name.lstrip("-").replace("-", "_")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(name, dest=dest, action="store_true", help=help)
+    group.add_argument(f"--no-{name.lstrip('-')}", dest=dest, action="store_false")
+    parser.set_defaults(**{dest: default})
+
+
 @dataclasses.dataclass
 class BridgeConfig:
     server_host: str
@@ -602,8 +611,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--control-hz", type=float, default=5.0)
     parser.add_argument("--execution-horizon", type=int, default=4)
     parser.add_argument("--request-timeout-ms", type=int, default=2000)
-    parser.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--duplicate-right-image", action=argparse.BooleanOptionalAction, default=False)
+    add_bool_arg(parser, "--dry-run", default=True)
+    add_bool_arg(parser, "--duplicate-right-image", default=False)
     parser.add_argument("--arm-action-scale", type=float, default=0.05)
     parser.add_argument("--max-arm-delta-rad", type=float, default=0.03)
     parser.add_argument("--hand-min", type=float, default=0.0)
@@ -630,12 +639,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--arm-command-topic", default="/right/joint_trajectory_controller/joint_trajectory")
     parser.add_argument("--hand-command-topic", default="/right/position_controller/commands")
     parser.add_argument("--hand-backend", choices=("ros_topic", "paradex_direct", "none"), default="ros_topic")
-    parser.add_argument("--inspire-direct-tactile", action=argparse.BooleanOptionalAction, default=False)
+    add_bool_arg(parser, "--inspire-direct-tactile", default=False)
     parser.add_argument("--paradex-root", default="../paradex")
     parser.add_argument("--paradex-pc-list", default="", help="Comma-separated paradex camera PC names. Empty uses paradex config.")
     parser.add_argument("--paradex-left-camera-name", default="", help="Camera serial/name for RLDX camera_ego_left. Empty chooses first received image.")
     parser.add_argument("--paradex-right-camera-name", default="", help="Camera serial/name for RLDX camera_ego_right. Empty chooses second received image or duplicates left.")
-    parser.add_argument("--paradex-start-remote-stream", action=argparse.BooleanOptionalAction, default=False)
+    add_bool_arg(parser, "--paradex-start-remote-stream", default=False)
     parser.add_argument("--paradex-stream-fps", type=int, default=10)
     parser.add_argument(
         "--arm-joint-names",
